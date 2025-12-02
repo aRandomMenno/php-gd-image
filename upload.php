@@ -16,7 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 if (empty($_POST) && empty($_FILES)) {
   goToPageWithMessage("index.php", "The picture you uploaded is too big!", "error");
-} else if ($uploadedFile["size"] > 6 * 1024 * 1024) {
+} else if ($uploadedFile["size"] > 8 * 1024 * 1024) {
   goToPageWithMessage("index.php", "The picture you uploaded is too big!", "error");
 }
 
