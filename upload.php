@@ -95,7 +95,7 @@ if (!file_exists($uploadsFolder . $imageFilename)) {
   else if ($gdImage === false) {
     goToPageWithMessage("index.php", "Failed to process the uploaded image.", "error");
   }
-  if (!imageavif($gdImage, $uploadsFolder . $imageFilename, 40, 4)) {
+  if (!imageavif($gdImage, $uploadsFolder . $imageFilename, 80, 6)) {
     // Er is wat fout gegaan bij het maken van de avif foto.
     goToPageWithMessage("index.php", "Failed to save image as AVIF.", "error");
   }
