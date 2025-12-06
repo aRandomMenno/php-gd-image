@@ -2,7 +2,7 @@
 
 session_start();
 
-require "config.php";
+require_once "config.php";
 
 $query = "SELECT * FROM `uploads`";
 $stmt = $conn->prepare($query);

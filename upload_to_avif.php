@@ -100,7 +100,7 @@ if (!file_exists($uploadsFolder . $imageFilename)) {
     goToPageWithMessage("index.php", "Failed to save image as AVIF.", "error");
   }
   // Verwijder het GDImage object.
-  imagedestroy(image: $gdImage);
+  imagedestroy($gdImage);
 }
 
 try {

@@ -1,15 +1,20 @@
 <?php
 
+// Bestanden met functies voor error redirects en foto bewerkingen.
 require_once "tools/goto.php";
 require_once "tools/images.php";
 
 session_start();
 
+// Zorg dat de upload en thumbnail mappen bestaan.
 $uploadsFolder = __DIR__ . "/.uploads/";
 if (!is_dir($uploadsFolder))
   mkdir($uploadsFolder, 0755, true);
 $uploadedFile = $_FILES["file"];
 
+$thumbnailsFolder = __DIR__ . "/.thumbnails/";
+if (!is_dir($thumbnailsFolder))
+  mkdir($thumbnailsFolder, 0755, true);
 /* 
 var_dump($uploadedFile);
 exit();
@@ -24,16 +29,24 @@ array(6) {
 } 
 */
 
+// Het moet wel een POST request zijn.
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
   goToPageWithMessage("index.php", "That's not a POST request!", "error");
 }
 
+// CSRF bescherming
+if (!isset($_POST['csrf']) || !isset($_SESSION["csrf"]) || $_POST['csrf'] !== $_SESSION['csrf']) {
+  goToPageWithMessage("index.php", "Invalid CSRF token.", "error");
+}
+
+// De foto mag niet te groot zijn.
 if (empty($_POST) && empty($_FILES)) {
   goToPageWithMessage("index.php", "The image you uploaded is too big, and was not added to the website!", "error");
 } else if ($uploadedFile["size"] > 8 * 1024 * 1024) {
   goToPageWithMessage("index.php", "The image you uploaded is too big, and was not added to the website!", "error");
 }
 
+// De titel moet bestaan en niet te lang zijn.
 $uploadTitle = $_POST["title"];
 if (!isset($uploadTitle) || empty($uploadTitle)) {
   goToPageWithMessage("index.php", "You didn't give a title.", "warning");
@@ -41,6 +54,7 @@ if (!isset($uploadTitle) || empty($uploadTitle)) {
   goToPageWithMessage("index.php", "The title can not be longer than 32 characters.", "warning");
 }
 
+// De naam van de uploader moet bestaan en niet te lang zijn.
 $uploadName = $_POST["name"];
 if (!isset($uploadName) || empty($uploadName)) {
   goToPageWithMessage("index.php", "You didn't give a name.", "warning");
@@ -48,6 +62,7 @@ if (!isset($uploadName) || empty($uploadName)) {
   goToPageWithMessage("index.php", "Your name can not be longer than 24 characters.", "warning");
 }
 
+// Controleren of er geen upload fouten zijn.
 if ($uploadedFile["error"] !== 0) {
   switch ($uploadedFile["error"]) {
     case 3:
@@ -64,8 +79,11 @@ if ($uploadedFile["error"] !== 0) {
   }
 }
 
+// Hash de foto, bepaal de bestandsnaam en extensie.
+// Daarna controleren of de foto al bestaat. Zo niet dan wordt hij verplaatst naar de upload map.
 $imageHash = hash_file("sha3-224", $uploadedFile["tmp_name"]);
 $exifMimeType = exif_imagetype($uploadedFile["tmp_name"]);
+$originalExtension = end(explode(".", $uploadedFile["name"]));
 $imageTypeToExtension = [
   IMAGETYPE_JPEG => ".jpg",
   IMAGETYPE_PNG => ".png",
@@ -83,8 +101,16 @@ if (!file_exists($uploadsFolder . $newImageFile)) {
   }
 }
 
+// Maak een thumbnail aan. (minder initieel laden)
 try {
-  require "config.php";
+  createThumbnail($uploadsFolder . $newImageFile, $thumbnailsFolder . $imageHash . ".avif", 240);
+} catch (Exception $error) {
+  goToPageWithMessage("index.php", $error->getMessage(), "error");
+}
+
+// Sla op in de database.
+try {
+  require_once "config.php";
   $query = "INSERT INTO `uploads` (`uploader`, `title`, `image`) VALUES (:uploader, :title, :image)";
   $stmt = $conn->prepare($query);
   $stmt->bindValue(":uploader", $uploadName);

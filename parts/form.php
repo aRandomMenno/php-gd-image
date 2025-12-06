@@ -1,3 +1,4 @@
+<?php $scrf = bin2hex(random_bytes(48)); $_SESSION['csrf'] = $scrf; ?>
   <div class="container mt-3">
     <fieldset class="border p-3 rounded bg-light">
       <legend class="w-auto px-2">Image uploader</legend>
@@ -15,6 +16,7 @@
           <input type="file" class="form-control" name="file" id="file"
             accept="image/gif, image/jpeg, image/jpg, image/png, image/webp, image/avif">
         </div>
+        <input type="text" name="csrf" id="csrf" value="<?= $_SESSION['csrf']; ?>" hidden>
         <button type="submit" class="btn btn-success" aria-label="verstuur">verstuur</button>
       </form>
     </fieldset>
