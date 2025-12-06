@@ -1,5 +1,6 @@
 <?php
 
+// Function to detect if the webp is animated (copied from the internet)
 function isWebpAnimated($fn): bool {
   $result = false;
   $fh = fopen($fn, "rb");
@@ -23,8 +24,6 @@ function createThumbnail($source, $destination, $desiredWidth): void {
       $img = imagecreatefrompng($source);
       break;
     case IMAGETYPE_WEBP:
-      // FIX: Animated webp's kunnen niet met GD library.
-      // Pak de eerste frame en sla die als avif thumbnail op.
       $img = imagecreatefromwebp($source);
       break;
     case IMAGETYPE_GIF:
@@ -34,10 +33,7 @@ function createThumbnail($source, $destination, $desiredWidth): void {
       $img = imagecreatefromavif($source);
       break;
     default:
-      throw new Exception("How did this error even occur? Unsupported image type for thumbnail creation. (should've already been caught earlier)");
-  }
-  if ($type === IMAGETYPE_GIF) {
-    $img = imagegif($img);
+      throw new Exception("Unsupported image type for thumbnail creation. (should've already been caught earlier)");
   }
   $width = imagesx($img);
   $height = imagesy($img);
@@ -45,7 +41,7 @@ function createThumbnail($source, $destination, $desiredWidth): void {
   $virtual_image = imagecreatetruecolor($desiredWidth, $desiredHeight);
   imagecopyresampled($virtual_image, $img, 0, 0, 0, 0, $desiredWidth, $desiredHeight, $width, $height);
 
-  if (!imageavif($virtual_image, $destination, 30, 3)) {
+  if (!imageavif($virtual_image, $destination, 40, 2)) {
     throw new Exception("Failed to save thumbnail as AVIF.");
   }
   imagedestroy($img);

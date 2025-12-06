@@ -2,7 +2,7 @@
     <h1 class="mb-4">Image Gallery</h1>
 
     <?php if ($imagesAmount > 0): ?>
-      <div class="row g-4">
+      <div class="cards-grid">
         <?php foreach ($images as $image):
           $fileParts = explode(".", $image["image"]);
           if (file_exists(".thumbnails/" . $fileParts[0] . ".avif")) {
@@ -11,8 +11,7 @@
             $thumbnail = ".uploads/" . $image["image"];
           }
           ?>
-          <div class="col-12 col-md-6 col-lg-4">
-            <div class="card h-100">
+            <div class="card mb-3">
               <img src="<?= htmlspecialchars($thumbnail) ?>" class="card-img-top"
                 alt="<?= htmlspecialchars($image['title']); ?>">
               <div class="card-body">
@@ -20,7 +19,6 @@
                 <p class="card-text text-muted">Uploaded by: <?= htmlspecialchars($image['uploader']); ?></p>
               </div>
             </div>
-          </div>
         <?php endforeach; ?>
       </div>
     <?php else: ?>

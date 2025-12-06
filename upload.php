@@ -1,8 +1,10 @@
 <?php
 
 // Bestanden met functies voor error redirects en foto bewerkingen.
+require_once "config.php";
 require_once "tools/goto.php";
 require_once "tools/images.php";
+require_once "tools/cleanup.php";
 
 session_start();
 
@@ -10,7 +12,6 @@ session_start();
 $uploadsFolder = __DIR__ . "/.uploads/";
 if (!is_dir($uploadsFolder))
   mkdir($uploadsFolder, 0755, true);
-$uploadedFile = $_FILES["file"];
 
 $thumbnailsFolder = __DIR__ . "/.thumbnails/";
 if (!is_dir($thumbnailsFolder))
@@ -42,8 +43,15 @@ if (!isset($_POST['csrf']) || !isset($_SESSION["csrf"]) || $_POST['csrf'] !== $_
 // De foto mag niet te groot zijn.
 if (empty($_POST) && empty($_FILES)) {
   goToPageWithMessage("index.php", "The image you uploaded is too big, and was not added to the website!", "error");
-} else if ($uploadedFile["size"] > 8 * 1024 * 1024) {
+} 
+$uploadedFile = $_FILES["file"];
+
+if ($uploadedFile["size"] > 8 * 1024 * 1024) {
   goToPageWithMessage("index.php", "The image you uploaded is too big, and was not added to the website!", "error");
+}
+
+if (isWebpAnimated($uploadedFile["tmp_name"])) {
+  goToPageWithMessage("index.php", "The image you uploaded is animated webp image, we don't support those yet.", "error");
 }
 
 // De titel moet bestaan en niet te lang zijn.
@@ -81,7 +89,7 @@ if ($uploadedFile["error"] !== 0) {
 
 // Hash de foto, bepaal de bestandsnaam en extensie.
 // Daarna controleren of de foto al bestaat. Zo niet dan wordt hij verplaatst naar de upload map.
-$imageHash = hash_file("sha3-224", $uploadedFile["tmp_name"]);
+$imageHash = hash_file("sha3-384", $uploadedFile["tmp_name"]);
 $exifMimeType = exif_imagetype($uploadedFile["tmp_name"]);
 $originalExtension = end(explode(".", $uploadedFile["name"]));
 $imageTypeToExtension = [
@@ -92,7 +100,9 @@ $imageTypeToExtension = [
   IMAGETYPE_AVIF => ".avif"
 ];
 $imageExtension = isset($imageTypeToExtension[$exifMimeType]) ? $imageTypeToExtension[$exifMimeType] : "none";
-if ($imageExtension === "none") goToPageWithMessage("index.php", "The image you uploaded is currently not supported.", "warning");
+if ($imageExtension === "none") {
+  goToPageWithMessage("index.php", "The image you uploaded is currently not supported.", "warning");
+}
 $newImageFile = $imageHash . $imageExtension;
 
 if (!file_exists($uploadsFolder . $newImageFile)) {
@@ -105,12 +115,12 @@ if (!file_exists($uploadsFolder . $newImageFile)) {
 try {
   createThumbnail($uploadsFolder . $newImageFile, $thumbnailsFolder . $imageHash . ".avif", 500);
 } catch (Exception $error) {
+  cleanUpAfterError($uploadsFolder . $newImageFile, $thumbnailsFolder . $imageHash, $conn);
   goToPageWithMessage("index.php", $error->getMessage(), "error");
 }
 
 // Sla op in de database.
 try {
-  require_once "config.php";
   $query = "INSERT INTO `uploads` (`uploader`, `title`, `image`) VALUES (:uploader, :title, :image)";
   $stmt = $conn->prepare($query);
   $stmt->bindValue(":uploader", $uploadName);
@@ -118,8 +128,8 @@ try {
   $stmt->bindValue(":image", $newImageFile);
   $stmt->execute();
 } catch (PDOException $error) {
+  cleanUpAfterError($newImageFile, $imageHash, $conn);
   goToPageWithMessage("index.php", "An error occurred trying to add image to the DB. " . $error->getMessage(), "error");
 }
-
 // Als het goed is, is alles goed gegaan als we hier zijn.
 goToPageWithMessage("index.php", "Successfully added your image to the database.");

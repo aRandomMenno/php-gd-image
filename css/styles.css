@@ -1,16 +1,33 @@
 @import url("fonts.css");
 
-html, body {
+html,
+body {
   font-size: 1rem;
   font-family: "Barlow Regular";
   margin: 0;
   padding: 0;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-family: "Barlow Bold";
 }
 
-h3, h4 {
+h3,
+h4 {
   font-family: "Barlow Medium";
+}
+
+.cards-grid {
+  column-width: 20em;
+  column-gap: 0.8em;
+
+  .card {
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 0.8em 0;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    -moz-column-break-inside: avoid;
+  }
 }
