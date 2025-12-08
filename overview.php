@@ -4,7 +4,7 @@ session_start();
 
 require_once "config.php";
 
-$query = "SELECT * FROM `uploads`";
+$query = "SELECT * FROM `uploads` ORDER BY `id` DESC";
 $stmt = $conn->prepare($query);
 $stmt->execute();
 $images = $stmt->fetchAll();
